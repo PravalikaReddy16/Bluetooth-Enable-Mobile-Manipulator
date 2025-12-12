@@ -1,95 +1,148 @@
-# 🤖 Mobile Manipulator Robot (Arduino Bluetooth Control)
+# 🤖 Bluetooth-Controlled Mobile Manipulator
 
-This project details the construction and deployment of a mobile manipulator robot. The system features a 4-wheel drive mobile platform controlled by an **Arduino Uno** and a 4-DOF robotic arm controlled by an **Arduino Nano**. The entire system is operated wirelessly via Bluetooth using a smartphone app.
+A robust, wirelessly controlled robotics system that combines a 4-wheel drive mobile chassis with a 4-degree-of-freedom robotic arm. This project utilizes a dual-microcontroller architecture to ensure efficient power management and signal stability.
 
-## 📋 Hardware Requirements
+## 👥 Project Team
+**Designed and Developed by:**
+* **Pravalika Kota**
+* **Jampu Brahma Teja**
+* **Lokesh Jaya rao**
 
-### Electronics
-* **Master Controller:** Arduino Uno R3
-* **Slave Controller:** Arduino Nano
-* **Communication:** HC-05 or HC-06 Bluetooth Module
-* **Motor Driver:** L298N H-Bridge Driver
-* **Actuators:**
-    * 4x DC Gear Motors (for wheels)
-    * 3x MG996R High Torque Servos (Base, Shoulder, Elbow)
-    * 1x SG90 Micro Servo (Gripper)
-* **Power:**
-    * 12V Li-Po Battery (3S) or Li-Ion Pack
-    * LM2596 Buck Converter (Step-down module 12V to 5V/3A)
+---
 
-### Mechanical
-* 4-Wheel Robot Chassis Kit
-* 3D Printed Robotic Arm Parts (Base, Links, Claw)
-* Jumper Wires & Breadboard
+## 📖 Overview
+This project bridges the gap between mobility and manipulation. Users can remotely drive the robot and operate the robotic arm using a smartphone app via Bluetooth. The system is split into two independent processing units:
+1.  **Mobile Base (Master):** Controlled by an **Arduino Uno with an L293D Motor Shield**. It handles navigation and Bluetooth communication.
+2.  **Robotic Arm (Slave):** Controlled by an **Arduino Nano with a V5 Servo Shield**. It handles the precise PWM signals required for the arm's servo motors.
 
-## 🔌 Wiring Guide
+---
 
-### 1. Power Distribution (CRITICAL)
-Do not power servos directly from the Arduino 5V pin.
-* **Battery (12V):** Connects to L298N 12V input and LM2596 Input.
-* **LM2596 Output (5V):** Connects to **Arduino Uno 5V**, **Arduino Nano 5V**, and **All Servo VCC pins**.
-* **Ground (GND):** All components (Battery, Drivers, Arduinos) must share a common ground wire.
+## 🛠️ Hardware Requirements
 
-![Wiring Diagram for Mobile Manipulator](path/to/wiring_diagram.png)
+### Microcontrollers & Shields
+* 1x Arduino Uno R3
+* 1x L293D Motor Drive Shield (v1)
+* 1x Arduino Nano
+* 1x Nano V5 I/O Expansion Shield (Sensor Shield)
 
-### 2. Master Connections (Arduino Uno)
-| Component | Pin Name | Arduino Uno Pin |
+### Actuators
+* 4x DC Gear Motors (BO Motors) + Wheels
+* 3x MG996R Metal Gear High-Torque Servos (Base, Shoulder, Elbow)
+* 1x SG90 Micro Servo (Gripper)
+
+### Power & Communication
+* 1x HC-05 or HC-06 Bluetooth Module
+* 1x 12V Li-Ion or Li-Po Battery Pack
+* 1x LM2596 Buck Converter (Step-down module 12V → 5V)
+* Jumper Wires (Male-Male, Male-Female, Female-Female)
+
+---
+
+## 🔌 Wiring & Connections (Step-by-Step)
+
+### Step 1: Mobile Base (Master Unit)
+**Components:** Arduino Uno + L293D Shield + HC-05 Bluetooth + DC Motors.
+
+1.  **Mount the Shield:** Plug the L293D Motor Shield directly on top of the Arduino Uno.
+2.  **Connect Motors:**
+    * Front Left Motor wires → Terminal **M1**
+    * Front Right Motor wires → Terminal **M2**
+    * Back Left Motor wires → Terminal **M3**
+    * Back Right Motor wires → Terminal **M4**
+3.  **Connect Bluetooth (Using Analog Pins):**
+    * Since the shield uses digital pins, we use Analog pins as Digital I/O.
+    * **HC-05 VCC** → Shield 5V
+    * **HC-05 GND** → Shield GND
+    * **HC-05 TX** → Arduino **A0**
+    * **HC-05 RX** → Arduino **A1**
+4.  **Connect Communication Link:**
+    * Arduino **A2** → Goes to Arduino Nano Pin **D2** (See Step 2).
+    * Arduino **GND** → Goes to Arduino Nano **GND** (Common Ground is critical).
+
+### Step 2: Robotic Arm (Slave Unit)
+**Components:** Arduino Nano + V5 Shield + Servos.
+
+1.  **Mount the Nano:** Plug the Arduino Nano into the V5 Expansion Shield.
+2.  **Connect Servos:** Plug servos into the 3-pin headers (Signal - Voltage - Ground) on the shield.
+    * **Base Servo:** Pin **D3**
+    * **Shoulder Servo:** Pin **D5**
+    * **Elbow Servo:** Pin **D6**
+    * **Gripper Servo:** Pin **D9**
+3.  **Connect Communication Link:**
+    * Nano **D2** (RX) → Connected from Uno **A2**.
+
+### Step 3: Power Distribution (CRITICAL)
+**Improper power wiring will cause the Arduino to reset continuously.**
+
+1.  **Source:** Connect the 12V Battery to a switch.
+2.  **To L293D Shield:**
+    * Connect 12V (+) to the **EXT_PWR** block on the shield.
+    * Connect Battery (-) to the **GND** block.
+    * **Important:** Remove the "PWR" jumper on the shield to prevent feeding 12V into the Arduino's 5V line.
+3.  **To Servo Shield:**
+    * Connect 12V Battery to the **Input** of the LM2596 Buck Converter.
+    * Adjust Buck Converter output to **5V - 6V**.
+    * Connect the Buck Converter **Output (+/-)** to the **External Power Terminal** on the Nano V5 Shield.
+    * **Do not** rely on USB power for the servos.
+
+---
+
+## 💻 Software Setup
+
+### Prerequisites
+1.  Download & Install **Arduino IDE**.
+2.  Install the **AFMotor Library**:
+    * Open Arduino IDE → Sketch → Include Library → Manage Libraries.
+    * Search for `AFMotor`.
+    * Install **"Adafruit Motor Shield library"** (v1.0.0 is standard).
+
+### Uploading Code
+1.  **Upload Master Code:**
+    * Connect Arduino Uno via USB.
+    * Select Board: "Arduino Uno".
+    * **Disconnect the HC-05 Bluetooth Module (VCC wire) while uploading.**
+    * Upload `Master_Code.ino`.
+    * Reconnect Bluetooth.
+2.  **Upload Slave Code:**
+    * Connect Arduino Nano via USB.
+    * Select Board: "Arduino Nano" (Select "Old Bootloader" if upload fails).
+    * Upload `Slave_Code.ino`.
+
+---
+
+## 📱 App Configuration & Control
+
+Use the **"Arduino Bluetooth Controller"** app (available on Play Store) or any Bluetooth Terminal.
+**Set the mode to: Controller Mode / Gamepad Mode.**
+
+### Control Mapping
+
+| Action | Button Setting (Data to Send) |
+| :--- | :--- |
+| **Move Forward** | `F` |
+| **Move Backward** | `B` |
+| **Turn Left** | `L` |
+| **Turn Right** | `R` |
+| **Stop** | `S` (Configure button "On Release" to send S) |
+| **Base Left** | `q` |
+| **Base Right** | `a` |
+| **Shoulder Up** | `w` |
+| **Shoulder Down** | `s` |
+| **Elbow Up** | `e` |
+| **Elbow Down** | `d` |
+| **Gripper Open** | `o` |
+| **Gripper Close** | `c` |
+
+---
+
+## ⚠️ Troubleshooting Guide
+
+| Issue | Possible Cause | Solution |
 | :--- | :--- | :--- |
-| **HC-05 BT** | TX | D10 |
-| | RX | D11 |
-| **Nano Comms** | TX | D2 (Goes to Nano D2) |
-| **L298N Driver** | IN1 | D5 |
-| | IN2 | D6 |
-| | IN3 | D7 |
-| | IN4 | D8 |
+| **"Motor Shield Not Found" Error** | Missing Library | Install `AFMotor` library in Arduino IDE. |
+| **Robot resets when Arm moves** | Brownout / Low Power | Ensure Servos are powered by the Buck Converter, not the Arduino. |
+| **Bluetooth fails to connect** | Wrong PIN or wiring | PIN is usually `1234`. Check if TX/RX are crossed (TX->A0, RX->A1). |
+| **Arm doesn't respond** | Broken Serial Link | Check connection between Uno **A2** and Nano **D2**. Ensure Common Ground. |
+| **Motors spin wrong way** | Polarity reversed | Swap the two wires of the specific motor at the screw terminal. |
 
-### 3. Slave Connections (Arduino Nano)
-| Component | Pin Name | Arduino Nano Pin |
-| :--- | :--- | :--- |
-| **Uno Comms** | RX | D2 (Connects from Uno D3*) |
-| **Servo Base** | Signal | D3 |
-| **Servo Shoulder** | Signal | D5 |
-| **Servo Elbow** | Signal | D6 |
-| **Servo Gripper** | Signal | D9 |
-
-*[Note: In the code provided, we only use one-way communication from Uno (TX) to Nano (RX) to save pins.]*
-
-## 📱 App Configuration
-Use "Arduino Bluetooth Controller" app in "Controller/Button Mode".
-
-**Key Mapping:**
-* **Movement:**
-    * `F`: Forward
-    * `B`: Backward
-    * `L`: Left
-    * `R`: Right
-    * `S`: Stop (Release button)
-* **Arm Control:**
-    * `q` / `a`: Base Left / Right
-    * `w` / `s`: Shoulder Up / Down
-    * `e` / `d`: Elbow Up / Down
-    * `o` / `c`: Gripper Open / Close
-
-## ⚠️ Troubleshooting & Common Errors
-
-**1. Brownout / Arduino Resetting**
-* **Symptom:** The Arduino restarts when the arm moves or the robot stops suddenly.
-* **Cause:** Servos are drawing too much current, causing a voltage drop.
-* **Fix:** Ensure you are using a high-amp external power source (Buck converter) for the servos. **Never** power MG996R servos from the Arduino USB or 5V pin.
-
-
-
-[Image of LM2596 buck converter wiring]
-
-
-**2. Bluetooth Not Connecting**
-* **Symptom:** Phone cannot find HC-05 or fails to pair.
-* **Fix:** Default PIN is usually `1234` or `0000`. Ensure the RX/TX wires on the Uno are not crossed (TX of module goes to Pin 10, RX of module goes to Pin 11).
-
-**3. Jittery Servos**
-* **Symptom:** Servos shake uncontrollably.
-* **Fix:** This is often electrical noise. Add a 470uF capacitor across the Servo power rails (Positive and Ground) to smooth out the power supply.
-
-**4. Wheels Spinning in Reverse**
-* **Symptom:** Robot goes backward when you press Forward.
-* **Fix:** Swap the two wires connected to the motor output on the L298N driver for the specific wheel that is reversed.
+---
